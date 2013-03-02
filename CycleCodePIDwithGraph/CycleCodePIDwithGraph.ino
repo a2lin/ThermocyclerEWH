@@ -45,12 +45,19 @@ void changeCurrent(int temp, long time1){ //function for calling PID
   pid.setInput(temp); //input into PID alg
   pid.process(time1); //calls PID calculation 
   curSpeed = pid.getOutput(); //curspeed gets output #
-  if(curSpeed>255){ 
-    curSpeed = 255;
-  }
-  else if(curSpeed<-255){
-    curSpeed = 255;
-  }
+  if(curSpeed>0){
+		heat();
+		if(curSpeed>255){ 
+    	curSpeed = 255;
+  	}
+	}
+	if(curSpeed<0){
+		cool();
+		if(curSpeed<-255){
+    	curSpeed = 255;
+  	}
+		curSpeed *= -1;
+	}
   analogWrite(out_pwm, curSpeed);
 
    
