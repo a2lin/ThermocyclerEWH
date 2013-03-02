@@ -36,6 +36,11 @@ PID_params par ={95,0,0,0,0,0,6,5,5,95}; //NM:First array cell is the temp setpo
 	double accLimit;*/
 PID pid = PID(&par);//enables PID functions
 long curSpeed = 0;//defines current speed
+
+/*
+ * A function to change the current output in analogWrite.
+ * Function Prototype: void changeCurrent(int temp, longtime1)
+ */
 void changeCurrent(int temp, long time1){ //function for calling PID
   pid.setInput(temp); //input into PID alg
   pid.process(time1); //calls PID calculation 
@@ -47,18 +52,21 @@ void changeCurrent(int temp, long time1){ //function for calling PID
     curSpeed = 255;
   }
   analogWrite(out_pwm, curSpeed);
+
+   
    if (D==1){ //set D=1 if serial output graph is wanted
     if ((millis()-timed)>del){ //makes data be recorded only in increments equal to "del"
     Serial.print("DATA,TIME,"); Serial.println(temp); //puts data in format the PLX-DAQ can interpret
     row++;
     timed=millis();
     }
-}
+   }
 }
 
 
 //// Thermistor to Temperature Conversion
 float pad = 10000; //thermistor resistance circuit
+
 float Thermistor(int RawADC) {
   long Resistance;  
   float Temp;  // Dual-Purpose variable to save space.
@@ -70,15 +78,28 @@ float Thermistor(int RawADC) {
 }
 
 
-
+/*
+ * Switches direction of Motor Driver to heating
+ * Function Prototype: void heat() 
+ */
 void heat(){ //code for heating
   digitalWrite(cw, HIGH); //H is heating, Wiring = A to red to black to B
   digitalWrite (ccw, LOW);
 }
+
+/*
+ * Switches direction of Motor Driver to cooling
+ * Function Prototype: void cool()
+ */
 void cool (){ //code for cooling
   digitalWrite(cw, LOW); //H is heating, Wiring = A to red to black to B
   digitalWrite (ccw, HIGH);
 }
+
+/*
+ * Sets up the Arduino Interface (pinMode, Serial Printing, Graph)
+ * Function Prototype: void setup()
+ */
 void setup() //setup of Pins, and print data
 {
   pinMode (cw, OUTPUT);
@@ -89,6 +110,11 @@ void setup() //setup of Pins, and print data
   Serial.println("LABEL,Time,Temperautre(C)"); //for serial output PLX-DAQ, labels columns
   timed=millis(); //used in serial output graph code
 }
+
+/*
+ * Loop Code for Arduino: This main loop is run constantly.
+ * Function Prototype: void loop()
+ */
 void loop()
 {
   Serial.print ("hi");
