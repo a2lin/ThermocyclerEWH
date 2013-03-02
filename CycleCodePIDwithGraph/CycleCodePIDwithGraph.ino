@@ -140,7 +140,7 @@ float temp = Thermistor (analogRead(ThermistorPIN)); //reads temperature from Th
     }
     
 ////PID controlling current methods   
-heat(); //sets direction for heating to 95C
+
 long cyclenum = 0; //keeps track of the number of cycles done (e.g. from 95 to 72
 long tempgoal = temp1; //sets temperature goal to 95C
 long PIDtime; //keeps track of running time to pass dt to PID alg
@@ -180,7 +180,6 @@ Serial.print(" temp reached");
 pid.setSetPoint(temp2);//sets the new setpoint at 50C
 tempgoal= temp2; //tempgoal is now 50C
 cyclenum++; //counts cycle numbers 
-cool(); //changes direction of current delivery to Peltier to cool down samples
 while(temp>tempgoal){ //loops PID until reaches 2nd temp goal
     temp= Thermistor (analogRead(ThermistorPIN));
     PIDtime = millis();
@@ -188,7 +187,7 @@ while(temp>tempgoal){ //loops PID until reaches 2nd temp goal
   }
   runningtime = millis();
   desiredTime=runningtime+delay2;
-  heat();
+
 while(runningtime<desiredTime){//run for 30 seconds
   runningtime = millis();
   temp= Thermistor (analogRead(ThermistorPIN));
@@ -199,7 +198,7 @@ while(runningtime<desiredTime){//run for 30 seconds
   
  tempgoal= temp3; //tempgoal is now 3rd temp goal
  cyclenum++; 
- heat();
+
 while(temp<tempgoal){ //loops PID until reaches 3rd temp goal
     temp= Thermistor (analogRead(ThermistorPIN));
     PIDtime = millis();
