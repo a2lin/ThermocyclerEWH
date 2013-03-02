@@ -58,18 +58,55 @@ void changeCurrent(int temp, long time1){ //function for calling PID
   	}
 		curSpeed *= -1;
 	}
-  analogWrite(out_pwm, curSpeed);
-
-   
-   if (D==1){ //set D=1 if serial output graph is wanted
+  analogWrite(out_pwm, curSpeed); 
+  if (D==0){ //set D=0 if only temperature is wanted
+    Serial.print("Celsius: "); 
+    Serial.print(temp,1);   // display Celsius
+    Serial.println("");
+  }
+	if (D==1){ //set D=1 if serial output graph is wanted
     if ((millis()-timed)>del){ //makes data be recorded only in increments equal to "del"
-    Serial.print("DATA,TIME,"); Serial.println(temp); //puts data in format the PLX-DAQ can interpret
-    row++;
-    timed=millis();
-    }
-   }
-}
+    	Serial.print("DATA,TIME,"); Serial.println(temp); //puts data in format the PLX-DAQ can interpret
+    	row++;
+    	timed=millis();
+    	}
+   	}
+	}
 
+/*
+ * A function to change temperature to temp goal based on new setpoint, and delay time
+ * Function Prototype: void changeCurrent(int temp, longtime1)
+ */
+void reachTemp(int setPoint, long delay){ // by default flag = 0 is cooling, 1 is heating
+	pid.setSetPoint(setPoint); //sets the set point for PID calc
+	int currentTemp = Thermistor (analogRead(ThermistorPIN));
+	int tempgoal = setPoint; //sets our goal as the setpoint temperature
+	int flag = currentTemp<tempgoal; //flag is a 0 if cooling, and 1 if heating
+	if(flag == 1){ //flag = 1 says we want to heat to our temp goal
+		while(currentTemp<tempgoal){ //loops PID until reaches temp goal
+			currentTemp= Thermistor (analogRead(ThermistorPIN));
+  		long PIDtime = millis();
+  		changeCurrent(temp, PIDtime); //passes temp and time to change pwm current delivery based on PID alg
+			}
+		}
+	else if(flag == 0){ //flag determines that we want to cool to our temperature goal
+		while(currentTemp>tempgoal){ //loops PID until reaches 3rd temp goal
+    	currentTemp = Thermistor (analogRead(ThermistorPIN));
+    	PIDtime = millis();
+    	changeCurrent(temp, PIDtime);
+  		}
+		}
+	unsigned long runningtime = millis(); //get current running time of program
+	unsigned long desiredTime = runningtime + delay; //running time + 30 second hold
+	
+	while(runningtime<desiredTime){ //keep temperature at temp goal until delay is reached
+  	runningtime = millis();
+  	temp= Thermistor (analogRead(ThermistorPIN));
+  	PIDtime = millis();
+  	changeCurrent(temp, PIDtime);
+		}
+	Serial.print(" temp reached");
+	}
 
 //// Thermistor to Temperature Conversion
 float pad = 10000; //thermistor resistance circuit
@@ -124,96 +161,19 @@ void setup() //setup of Pins, and print data
  */
 void loop()
 {
-  Serial.print ("hi");
-float temp = Thermistor (analogRead(ThermistorPIN)); //reads temperature from Thermistor function
-////Temperature Printing Methods
-  if (D==0){ //set D=0 if only temperature is wanted
-    Serial.print("Celsius: "); 
-    Serial.print(temp,1);   // display Celsius
-    Serial.println("");
-  }
-  if (D==1){ //set D=1 if serial output graph is wanted
-    if ((millis()-timed)>del){ //makes data be recorded only in increments equal to "del"
-    Serial.print("DATA,TIME,"); Serial.println(temp); //puts data in format the PLX-DAQ can interpret
-    row++;
-    timed=millis();
-    }
-    
-////PID controlling current methods   
-
+Serial.print ("hi");
+int temp = Thermistor (analogRead(ThermistorPIN)); //reads temperature from Thermistor function
 long cyclenum = 0; //keeps track of the number of cycles done (e.g. from 95 to 72
 long tempgoal = temp1; //sets temperature goal to 95C
 long PIDtime; //keeps track of running time to pass dt to PID alg
 
-while(temp<tempgoal){ //loops PID until reaches first temp goal
-////Temperature Printing Methods
-Serial.println ("Loop");
-Serial.println (timed);
-Serial.println (millis());
-float temp = Thermistor (analogRead(ThermistorPIN)); //reads temperature from Thermistor function
-  if (D==0){ //set D=0 if only temperature is wanted
-    Serial.print("Celsius: "); 
-    Serial.print(temp,1);   // display Celsius
-    Serial.println("");
-  }
-  if (D==1){ //set D=1 if serial output graph is wanted
-    if ((millis()-timed)>del){ //makes data be recorded only in increments equal to "del"
-    Serial.print("DATA,TIME,"); Serial.println(temp); //puts data in format the PLX-DAQ can interpret
-    row++;
-    timed=millis();
-    }
-  temp= Thermistor (analogRead(ThermistorPIN));
-  PIDtime = millis();
-  changeCurrent(temp, PIDtime); //passes temp and time to change pwm current delivery based on PID alg
-}
-//once temp goal is reached, we will maintain the temperature at said temp goal
-unsigned long runningtime = millis(); //get current running time of program
-unsigned long desiredTime = runningtime + delay1; //running time + 30 second hold
-while(runningtime<desiredTime){//run for 30 seconds
-  runningtime = millis();
-  temp= Thermistor (analogRead(ThermistorPIN));
-  PIDtime = millis();
-  changeCurrent(temp, PIDtime);
-}
-Serial.print(" temp reached");
-
-pid.setSetPoint(temp2);//sets the new setpoint at 50C
-tempgoal= temp2; //tempgoal is now 50C
+reachTemp(temp1, delay1);
 cyclenum++; //counts cycle numbers 
-while(temp>tempgoal){ //loops PID until reaches 2nd temp goal
-    temp= Thermistor (analogRead(ThermistorPIN));
-    PIDtime = millis();
-    changeCurrent(temp, PIDtime);
-  }
-  runningtime = millis();
-  desiredTime=runningtime+delay2;
 
-while(runningtime<desiredTime){//run for 30 seconds
-  runningtime = millis();
-  temp= Thermistor (analogRead(ThermistorPIN));
-  PIDtime = millis();
-  changeCurrent(temp, PIDtime);
-  }
-  Serial.print(" temp reached");
-  
- tempgoal= temp3; //tempgoal is now 3rd temp goal
- cyclenum++; 
+reachTemp(temp2, delay2);
+cyclenum++; //counts cycle numbers 
 
-while(temp<tempgoal){ //loops PID until reaches 3rd temp goal
-    temp= Thermistor (analogRead(ThermistorPIN));
-    PIDtime = millis();
-    changeCurrent(temp, PIDtime);
-  }
-  runningtime = millis();
-  desiredTime=runningtime+delay3;
-while(runningtime<desiredTime){//run for 30 seconds
-  runningtime = millis();
-  temp= Thermistor (analogRead(ThermistorPIN));
-  PIDtime = millis();
-  changeCurrent(temp, PIDtime);
-  }
-   Serial.print(" temp reached");
-   
-}
-  }
+reachTemp(temp3, delay3);
+cyclenum++; //counts cycle numbers 
+
 }
