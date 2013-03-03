@@ -4,7 +4,7 @@
 #define cw 4 //INA on motor driver
 #define ccw 5 //INB on motor driver
 #define out_pwm 3 //pwm for motor driver
-#define temp1 95 //first step at 95C of 30 seconds
+#define temp1 80 //first step at 95C of 30 seconds
 #define temp2 50 //second step at 50C of 30 seconds
 #define temp3 72 //third step at 72C of 1 minute and hold for 10 minutes at end
 #define temp4 4 //final temperature at 4C to hold
@@ -20,7 +20,7 @@ int del =500;// delay for serial output
 long timed; // time for serial output
 
 ////PID algorithm section
-PID_params par ={95,0,0,0,0,0,6,5,5,95}; //NM:First array cell is the temp setpoint
+PID_params par ={80,0,0,0,0,0,10,5,0,95}; //NM:First array cell is the temp setpoint
 /*struct PID_params {
 	double set;
 	double input;
@@ -77,33 +77,34 @@ void changeCurrent(int temp, long time1){ //function for calling PID
  * A function to change temperature to temp goal based on new setpoint, and delay time
  * Function Prototype: void changeCurrent(int temp, longtime1)
  */
-void reachTemp(int setPoint, long delay){ // by default flag = 0 is cooling, 1 is heating
+void reachTemp(int setPoint, long delayHold){ // by default flag = 0 is cooling, 1 is heating
 	pid.setSetPoint(setPoint); //sets the set point for PID calc
 	int currentTemp = Thermistor (analogRead(ThermistorPIN));
 	int tempgoal = setPoint; //sets our goal as the setpoint temperature
 	int flag = currentTemp<tempgoal; //flag is a 0 if cooling, and 1 if heating
-	if(flag == 1){ //flag = 1 says we want to heat to our temp goal
+	long PIDtime;
+        if(flag == 1){ //flag = 1 says we want to heat to our temp goal
 		while(currentTemp<tempgoal){ //loops PID until reaches temp goal
 			currentTemp= Thermistor (analogRead(ThermistorPIN));
   		long PIDtime = millis();
-  		changeCurrent(temp, PIDtime); //passes temp and time to change pwm current delivery based on PID alg
+  		changeCurrent(currentTemp, PIDtime); //passes temp and time to change pwm current delivery based on PID alg
 			}
 		}
 	else if(flag == 0){ //flag determines that we want to cool to our temperature goal
 		while(currentTemp>tempgoal){ //loops PID until reaches 3rd temp goal
     	currentTemp = Thermistor (analogRead(ThermistorPIN));
     	PIDtime = millis();
-    	changeCurrent(temp, PIDtime);
+    	changeCurrent(currentTemp, PIDtime);
   		}
 		}
 	unsigned long runningtime = millis(); //get current running time of program
-	unsigned long desiredTime = runningtime + delay; //running time + 30 second hold
+	unsigned long desiredTime = runningtime + delayHold; //running time + 30 second hold
 	
 	while(runningtime<desiredTime){ //keep temperature at temp goal until delay is reached
   	runningtime = millis();
-  	temp= Thermistor (analogRead(ThermistorPIN));
+  	currentTemp= Thermistor (analogRead(ThermistorPIN));
   	PIDtime = millis();
-  	changeCurrent(temp, PIDtime);
+  	changeCurrent(currentTemp, PIDtime);
 		}
 	Serial.print(" temp reached");
 	}
